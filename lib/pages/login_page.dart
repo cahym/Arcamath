@@ -24,6 +24,7 @@ class LoginPage extends StatelessWidget {
         data: Theme.of(context).copyWith(scaffoldBackgroundColor: Colors.transparent),
         child: SignInScreen(
           providers: [GoogleProvider(clientId: kGoogleClientId)],
+          showAuthActionSwitch: false,
           // Tudo vai em subtitle/footer (exibidos em qualquer largura), sem painel lateral.
           subtitleBuilder: (context, action) => Padding(
             padding: const EdgeInsets.only(bottom: 28, top: 24),

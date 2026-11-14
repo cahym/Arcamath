@@ -90,11 +90,13 @@ ThemeData buildTheme(Brightness brightness, SettingsState s) {
     outlineVariant: p.grid,
   );
   final base = ThemeData(useMaterial3: true, colorScheme: scheme, extensions: [p]);
-  var text = GoogleFonts.getTextTheme(s.fontFamily, base.textTheme);
+  var text = GoogleFonts.getTextTheme(s.fontFamily, Typography.englishLike2021);
   // Press Start 2P e muito largo: reduz os tamanhos-base para o texto corrido caber.
-  if (s.fontFamily == 'Press Start 2P') text = text.apply(fontSizeFactor: .7);
   return base.copyWith(
-    textTheme: text.apply(bodyColor: p.text, displayColor: p.text),
-    scaffoldBackgroundColor: p.bg,
-  );
+  textTheme: (s.fontFamily == 'Press Start 2P'
+          ? text.apply(fontFamily: s.fontFamily, fontSizeFactor: 0.7)
+          : text.apply(fontFamily: s.fontFamily))
+      .apply(bodyColor: p.text, displayColor: p.text),
+  scaffoldBackgroundColor: p.bg,
+);
 }
