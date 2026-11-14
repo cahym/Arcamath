@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "475631228171",
+    "project_id": "arcamath-52f72",
+    "storage_bucket": "arcamath-52f72.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:475631228171:android:b4c4d9c71ae77e16bd3e0e",
+        "android_client_info": {
+          "package_name": "com.example.arcamath"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "475631228171-vnls3f2k31ejmchocantd11v0oqfr75c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATJ8TRXsuf22y8S1myyIobFTKRYU_CKm4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "475631228171-vnls3f2k31ejmchocantd11v0oqfr75c.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

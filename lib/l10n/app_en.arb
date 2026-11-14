@@ -1,0 +1,117 @@
+{
+  "@@locale": "en",
+  "appTitle": "Arcamath",
+  "insertCoin": "INSERT COIN",
+  "loginSubtitle": "Sign in with Google to play",
+  "madeBy": "Made by {names}",
+  "@madeBy": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "language": "Language",
+  "navGame": "Play",
+  "navRanking": "Hall of Fame",
+  "navSettings": "Settings",
+  "navHelp": "Help",
+  "levelEasy": "Easy",
+  "levelIntermediate": "Intermediate",
+  "levelAdvanced": "Advanced",
+  "levelHard": "Hard",
+  "score": "Score",
+  "solvedCount": "Solved: {count}",
+  "@solvedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "latexTitle": "LaTeX preview",
+  "trayTitle": "Symbols",
+  "trayHint": "Click a slot, then a symbol, or drag symbols into a slot. Keyboard: type the symbols (^ for **, R for √, C for ∛), arrows pick the slot, Backspace deletes, Enter checks, H hint, S skip.",
+  "backspace": "Delete last symbol",
+  "check": "CHECK",
+  "skip": "SKIP",
+  "clear": "CLEAR",
+  "verdictCorrect": "Correct! +{points} points",
+  "@verdictCorrect": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "verdictWrong": "Not yet: {left} ≠ {right}",
+  "@verdictWrong": {
+    "placeholders": {
+      "left": {
+        "type": "String"
+      },
+      "right": {
+        "type": "String"
+      }
+    }
+  },
+  "errSyntax": "That expression is not valid.",
+  "errNeedEquals": "Use exactly one = sign.",
+  "errDivZero": "Division by zero.",
+  "errNonIntDiv": "This level only allows exact integer divisions.",
+  "errFactorial": "Factorial needs a whole number from 0 to 20.",
+  "errDomain": "Invalid operation, such as the root of a negative number.",
+  "errOverflow": "The number got too big.",
+  "errSave": "Correct, but saving your progress failed.",
+  "allSolved": "You solved every number at this level! Try another level.",
+  "loadError": "Could not load data: {error}",
+  "@loadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "retry": "TRY AGAIN",
+  "rankingTitle": "Hall of Fame",
+  "rankingEmpty": "Nobody has scored yet. Be the first!",
+  "you": "you",
+  "settingsTitle": "Settings",
+  "themeMode": "Theme",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "fontSize": "Font size",
+  "fontFamily": "Font",
+  "seedColor": "Theme color",
+  "customColor": "Custom color",
+  "sound": "Sound",
+  "soundHint": "Sound effects (off by default)",
+  "account": "Account",
+  "signOut": "SIGN OUT",
+  "helpTitle": "How to play",
+  "helpBody": "Each round shows a 4-digit number. Keep the digits in order and fill the slots under the spaces between them with symbols so that both sides of the = sign have the same value.\n\nExample: 5261 becomes (5 − 2)! = 6 × 1.\n\nClick a slot, then click symbols (or drag them in). Click a placed symbol to remove it. Digits with nothing between them join into a bigger number.\n\nLevels: Easy allows fractions, ⌊x⌋ and ⌈x⌉. All other levels only allow exact integer divisions. Intermediate drops ⌊ ⌋ ⌈ ⌉, Advanced also drops ∛ and **, and Hard also drops √ and !.\n\nHints (the 3 hearts): 1 shows where the = goes, 2 shows which symbols are used, 3 fills in the solution. Using 1 or 2 hints halves the points; revealing the solution gives 0.\n\nKeyboard: type + - * / ( ) | ! = , ^ for **, R for √, C for ∛, arrows pick a slot, Backspace deletes, Esc clears, Enter checks, H hint, S skip.\n\nToo hard? Press SKIP to get another number.",
+  "close": "CLOSE",
+  "pressStart": "PRESS START",
+  "areYouReady": "ARE YOU READY?",
+  "highScore": "HIGH SCORE",
+  "hint": "HINT",
+  "hintEquals": "Hint 1: the = sign goes after digit number {n}.",
+  "@hintEquals": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "hintSymbols": "Hint 2: the solution uses {symbols}",
+  "@hintSymbols": {
+    "placeholders": {
+      "symbols": {
+        "type": "String"
+      }
+    }
+  },
+  "hintReveal": "Hint 3: the full solution is on the board. This round is worth 0 points.",
+  "hintNone": "No solution found for this number. Press SKIP."
+}
