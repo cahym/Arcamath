@@ -68,10 +68,18 @@ class _Hud extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final data = ref.watch(userDocProvider).valueOrNull;
+    final data = ref.watch(userDocProvider).when(
+      data: (value) => value,
+      loading: () => null,
+      error: (_, __) => null,
+    );
     final score = (data?['score'] as num?)?.toInt() ?? 0;
     final solved = (data?['solvedCount'] as num?)?.toInt() ?? 0;
-    final high = ref.watch(_highScoreProvider).valueOrNull ?? 0;
+    final high = ref.watch(_highScoreProvider).when(
+      data: (value) => value,
+      loading: () => 0,
+      error: (_, __) => 0,
+    );
     final hints = ref.watch(gameProvider.select((g) => g.hints));
     final size = compact ? 14.0 : 20.0;
 

@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 
 const kAppName = 'Arcamath';
 
-/// TODO: troque pelos nomes reais da dupla (aparecem na tela de login).
-const kTeamMembers = ['Integrante 1', 'Integrante 2'];
 
-/// TODO: Client ID OAuth da Web (Firebase Console > Authentication > Google).
-const kGoogleClientId = 'SEU_CLIENT_ID.apps.googleusercontent.com';
+const kTeamMembers = ['Camila Martins', 'Eline Vieira'];
+
+const kGoogleClientId = '475631228171-vnls3f2k31ejmchocantd11v0oqfr75c.apps.googleusercontent.com';
 
 /// Fontes oferecidas nas configuracoes (todas via google_fonts).
 /// "Garamond" = EB Garamond; "Helvetica" nao existe no Google Fonts, Arimo e o equivalente.
