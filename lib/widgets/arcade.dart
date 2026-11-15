@@ -42,7 +42,9 @@ class ArcadeButton extends StatefulWidget {
     this.tooltip,
     this.fixedSize,
     this.symbolSize,
+    this.large = false,
   });
+  final bool large;
   final Size? fixedSize;
   final double? symbolSize;
   final VoidCallback? onPressed;
@@ -78,7 +80,7 @@ class _ArcadeButtonState extends State<ArcadeButton> {
           widget.label!,
           style: widget.symbol
               ? symbolStyle(fg, size: widget.symbolSize ?? (widget.compact ? 18 : 22))
-              : GoogleFonts.pressStart2p(fontSize: widget.compact ? 9 : 11, color: fg),
+              : GoogleFonts.pressStart2p(fontSize: widget.large ? 14 : (widget.compact ? 9 : 11), color: fg),
         ),
     ]);
 
@@ -97,10 +99,10 @@ class _ArcadeButtonState extends State<ArcadeButton> {
             transform: Matrix4.translationValues(0, 5 - depth, 0),
             constraints: widget.fixedSize != null
                 ? BoxConstraints.tight(widget.fixedSize!)
-                : BoxConstraints(minWidth: widget.compact ? 40 : 56, minHeight: widget.compact ? 40 : 48),
+                : BoxConstraints(minWidth: widget.large ? 120 : (widget.compact ? 40 : 56), minHeight: widget.large ? 52 : (widget.compact ? 40 : 48)),
             padding: widget.fixedSize != null
                 ? EdgeInsets.zero
-                : EdgeInsets.symmetric(horizontal: widget.compact ? 10 : 16, vertical: 8),
+                : EdgeInsets.symmetric(horizontal: widget.large ? 30 : (widget.compact ? 10 : 16), vertical: 8),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: base,
@@ -354,4 +356,39 @@ class _ScanPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ScanPainter old) => false;
+}
+
+/// Numero que "rola" ate o novo valor sempre que ele muda (contador de fliperama).
+/// Enquanto esta contando, o texto fica na cor de destaque (claro) e volta ao normal ao terminar.
+class AnimatedCount extends StatelessWidget {
+  const AnimatedCount({
+    super.key,
+    required this.value,
+    required this.style,
+    this.pad = 0,
+    this.duration = const Duration(milliseconds: 800),
+    this.activeColor,
+  });
+  final int value;
+  final TextStyle style;
+
+  /// Zeros a esquerda (ex.: 6 -> 000120).
+  final int pad;
+  final Duration duration;
+  final Color? activeColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final highlight = activeColor ?? context.arcade.text;
+    return TweenAnimationBuilder<int>(
+      // so o "end" importa: ao mudar, a animacao continua do valor atual ate o novo
+      tween: IntTween(begin: 0, end: value),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      builder: (context, v, _) => Text(
+        v.toString().padLeft(pad, '0'),
+        style: v != value ? style.copyWith(color: highlight) : style,
+      ),
+    );
+  }
 }

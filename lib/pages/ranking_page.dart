@@ -69,7 +69,7 @@ class _RankingPageState extends ConsumerState<RankingPage> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            Text('${rows[i].score}', style: arcadeStyle(context, size: 14, color: cs.secondary, glow: 4)),
+                            AnimatedCount(value: rows[i].score, style: arcadeStyle(context, size: 14, color: cs.secondary, glow: 4)),
                           ]),
                         ),
                     ]);

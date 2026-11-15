@@ -1,4 +1,5 @@
 import 'package:arcamath/l10n/app_localizations.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,16 +12,17 @@ import '../game/l10n_helpers.dart';
 import '../game/level.dart';
 import '../state/providers.dart';
 import '../widgets/arcade.dart';
+import '../widgets/cabinet.dart';
 import '../widgets/latex_preview.dart';
 
-/// Maior pontuacao do ranking (placar "HIGH SCORE" do topo).
-final _highScoreProvider = FutureProvider.autoDispose<int>((ref) async {
-  final top = await ref.read(repositoryProvider).topPlayers(limit: 1);
-  return top.isEmpty ? 0 : top.first.score;
-});
+/// Top 5 do ranking (usado no placar da tela e no "HIGH SCORE").
+final _topProvider = FutureProvider.autoDispose<List<RankEntry>>(
+  (ref) => ref.read(repositoryProvider).topPlayers(limit: 5),
+);
 
-/// Tela principal pensada para computador: HUD no topo, tela CRT com os NUMEROS NA HORIZONTAL
-/// e os OPERADORES ABAIXO deles (lacunas sob os espacos entre digitos + bandeja de simbolos).
+/// Tela principal: um gabinete de fliperama.
+///  - TELA: placar, recorde, coracoes (dicas), expressao, botoes DICA / VERIFICAR / PULAR e ranking;
+///  - PAINEL DE CONTROLE: os operadores como botoes redondos da maquina.
 class GamePage extends ConsumerWidget {
   const GamePage({super.key});
 
@@ -29,28 +31,18 @@ class GamePage extends ConsumerWidget {
     final round = ref.watch(gameProvider.select((g) => g.round));
     return SafeArea(
       child: LayoutBuilder(builder: (context, c) {
-        final compact = c.maxWidth < 720;
-        final side = compact ? 12.0 : 32.0;
+        final compact = c.maxWidth < 760;
+        final side = compact ? 8.0 : 32.0;
         return SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(side, 20, side, 110),
+          padding: EdgeInsets.fromLTRB(side, compact ? 8 : 20, side, 110),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1000),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                _Hud(compact: compact),
-                const SizedBox(height: 18),
-                // FutureBuilder: aguarda o Firestore + solucionador informarem um numero valido.
-                FutureBuilder<int>(
-                  future: round,
-                  builder: (context, snap) {
-                    if (snap.connectionState != ConnectionState.done) {
-                      return const Padding(padding: EdgeInsets.all(64), child: ArcadeLoader());
-                    }
-                    if (snap.hasError) return _RoundError(error: snap.error!);
-                    return _Round(number: snap.data!, compact: compact);
-                  },
-                ),
-              ]),
+              child: ArcadeCabinet(
+                compact: compact,
+                screen: _ScreenContent(round: round, compact: compact),
+                deck: _Deck(compact: compact),
+              ),
             ),
           ),
         );
@@ -59,7 +51,46 @@ class GamePage extends ConsumerWidget {
   }
 }
 
-// ------------------------------------------------------------------ HUD
+// ------------------------------------------------------------------ conteudo da tela
+
+class _ScreenContent extends StatelessWidget {
+  const _ScreenContent({required this.round, required this.compact});
+  final Future<int> round;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.arcade;
+    // FutureBuilder: aguarda o Firestore + solucionador informarem um numero valido.
+    final main = FutureBuilder<int>(
+      future: round,
+      builder: (context, snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return const Padding(padding: EdgeInsets.symmetric(vertical: 70), child: ArcadeLoader());
+        }
+        if (snap.hasError) return _RoundError(error: snap.error!);
+        return _Play(number: snap.data!, compact: compact);
+      },
+    );
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _Hud(compact: compact),
+      const SizedBox(height: 12),
+      Container(height: 2, color: p.grid.withValues(alpha: .7)),
+      SizedBox(height: compact ? 14 : 18),
+      if (compact) ...[
+        main,
+        const SizedBox(height: 18),
+        const _MiniRanking(),
+      ] else
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: main),
+          const SizedBox(width: 18),
+          const SizedBox(width: 230, child: _MiniRanking()),
+        ]),
+    ]);
+  }
+}
 
 class _Hud extends ConsumerWidget {
   const _Hud({required this.compact});
@@ -71,13 +102,14 @@ class _Hud extends ConsumerWidget {
     final data = ref.watch(userDocProvider).asData?.value;
     final score = (data?['score'] as num?)?.toInt() ?? 0;
     final solved = (data?['solvedCount'] as num?)?.toInt() ?? 0;
-    final high = ref.watch(_highScoreProvider).asData?.value ?? 0;
+    final top = ref.watch(_topProvider).asData?.value;
+    final high = (top == null || top.isEmpty) ? 0 : top.first.score;
     final hints = ref.watch(gameProvider.select((g) => g.hints));
-    final size = compact ? 14.0 : 20.0;
+    final size = compact ? 13.0 : 20.0;
 
     Widget cell(String label, Widget value, CrossAxisAlignment a) => Column(
           crossAxisAlignment: a,
-          children: [Text(label, style: pixelLabel(context)), const SizedBox(height: 8), value],
+          children: [Text(label, style: pixelLabel(context, size: compact ? 8 : 10)), const SizedBox(height: 8), value],
         );
 
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -85,7 +117,7 @@ class _Hud extends ConsumerWidget {
         child: cell(
           l.score.toUpperCase(),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(score.toString().padLeft(6, '0'), style: arcadeStyle(context, size: size)),
+            AnimatedCount(value: score, style: arcadeStyle(context, size: size), pad: 6),
             const SizedBox(height: 6),
             Text(l.solvedCount(solved), style: pixelLabel(context, size: 8)),
           ]),
@@ -93,8 +125,11 @@ class _Hud extends ConsumerWidget {
         ),
       ),
       Expanded(
-        child: cell(l.highScore, Text(high.toString().padLeft(6, '0'), style: arcadeStyle(context, size: size)),
-            CrossAxisAlignment.center),
+        child: cell(
+          l.highScore,
+          AnimatedCount(value: high, style: arcadeStyle(context, size: size), pad: 6),
+          CrossAxisAlignment.center,
+        ),
       ),
       Expanded(
         // Os 3 coracoes sao as dicas disponiveis.
@@ -102,12 +137,91 @@ class _Hud extends ConsumerWidget {
           l.hint,
           Row(mainAxisSize: MainAxisSize.min, children: [
             for (var i = 0; i < 3; i++)
-              Padding(padding: const EdgeInsets.only(left: 4), child: PixelHeart(filled: i >= hints, size: compact ? 20 : 28)),
+              Padding(padding: const EdgeInsets.only(left: 4), child: PixelHeart(filled: i >= hints, size: compact ? 18 : 28)),
           ]),
           CrossAxisAlignment.end,
         ),
       ),
     ]);
+  }
+}
+
+/// Ranking resumido dentro da tela do fliperama.
+class _MiniRanking extends ConsumerWidget {
+  const _MiniRanking();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final p = context.arcade;
+    final me = FirebaseAuth.instance.currentUser?.uid;
+    final top = ref.watch(_topProvider);
+
+    // Quando minha pontuacao muda, atualiza o ranking depois que o servidor tiver tempo de confirmar.
+    ref.listen<int?>(
+      userDocProvider.select((v) => (v.value?['score'] as num?)?.toInt()),
+      (a, b) {
+        if (a != b) {
+          Future<void>.delayed(const Duration(seconds: 3), () {
+            if (context.mounted) ref.invalidate(_topProvider);
+          });
+        }
+      },
+    );
+
+    const medals = [Color(0xFFFFD54F), Color(0xFFCFD8DC), Color(0xFFD7895B)];
+    Widget body;
+    if (top.isLoading && !top.hasValue) {
+      body = const Padding(padding: EdgeInsets.symmetric(vertical: 24), child: SizedBox(height: 40, child: ArcadeLoader()));
+    } else {
+      final rows = top.value ?? const <RankEntry>[];
+      body = rows.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(l.rankingEmpty, textAlign: TextAlign.center, style: pixelLabel(context, size: 8).copyWith(height: 1.7)),
+            )
+          : Column(children: [
+              for (var i = 0; i < rows.length; i++)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  child: Row(children: [
+                    SizedBox(
+                      width: 22,
+                      child: Text('${i + 1}', style: pixelLabel(context, size: 9, color: i < 3 ? medals[i] : p.text)),
+                    ),
+                    Expanded(
+                      child: Text(
+                        rows[i].name.toUpperCase(),
+                        overflow: TextOverflow.ellipsis,
+                        style: pixelLabel(context, size: 8, color: rows[i].uid == me ? p.title : p.text),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(rows[i].score.toString().padLeft(5, '0'), style: pixelLabel(context, size: 8, color: p.title)),
+                  ]),
+                ),
+            ]);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: .28),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: p.grid, width: 3),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Icon(Icons.emoji_events, color: p.title, size: 18),
+          const SizedBox(width: 8),
+          Expanded(child: Text(l.rankingTitle.toUpperCase(), style: pixelLabel(context, size: 9, color: p.title))),
+        ]),
+        const SizedBox(height: 8),
+        Container(height: 2, color: p.grid),
+        const SizedBox(height: 6),
+        body,
+      ]),
+    );
   }
 }
 
@@ -119,7 +233,8 @@ class _RoundError extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final msg = error is AllSolvedException ? l.allSolved : l.loadError(error.toString());
-    return ArcadePanel(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(children: [
         Text(msg, textAlign: TextAlign.center),
         const SizedBox(height: 16),
@@ -131,8 +246,8 @@ class _RoundError extends ConsumerWidget {
 
 // ------------------------------------------------------------------ rodada
 
-class _Round extends ConsumerWidget {
-  const _Round({required this.number, required this.compact});
+class _Play extends ConsumerWidget {
+  const _Play({required this.number, required this.compact});
   final int number;
   final bool compact;
 
@@ -171,40 +286,22 @@ class _Round extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Focus(
-      autofocus: true,
-      onKeyEvent: (_, e) => _onKey(ref, e),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _Cabinet(number: number, compact: compact),
-        const SizedBox(height: 20),
-        _Controls(number: number),
-      ]),
-    );
-  }
-}
-
-/// Tela CRT: nivel, numero (horizontal) com lacunas de operadores abaixo, LaTeX e mensagens.
-class _Cabinet extends ConsumerWidget {
-  const _Cabinet({required this.number, required this.compact});
-  final int number;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final p = context.arcade;
     final cs = Theme.of(context).colorScheme;
     final game = ref.watch(gameProvider);
+    final n = ref.read(gameProvider.notifier);
+    final busy = game.flying;
     final tex = previewLatex(tokensFor(number, game.gaps));
     final v = game.verdict;
-    final small = pixelLabel(context, size: compact ? 9 : 10);
+    final small = pixelLabel(context, size: compact ? 8 : 9);
 
     final msgs = <Widget>[];
     if (v != null) {
       msgs.add(Text(
         verdictText(l, v),
         textAlign: TextAlign.center,
-        style: pixelLabel(context, size: 11, color: v.kind == VerdictKind.correct ? p.title : cs.error),
+        style: pixelLabel(context, size: 10, color: v.kind == VerdictKind.correct ? p.title : cs.error),
       ));
     }
     if (game.hints >= 1) {
@@ -212,7 +309,7 @@ class _Cabinet extends ConsumerWidget {
       if (sol == null) {
         msgs.add(Text(l.hintNone, textAlign: TextAlign.center, style: small));
       } else {
-        if (game.hints >= 1) msgs.add(Text(l.hintEquals(sol.leftDigits), textAlign: TextAlign.center, style: small));
+        msgs.add(Text(l.hintEquals(sol.leftDigits), textAlign: TextAlign.center, style: small));
         if (game.hints >= 2) {
           msgs.add(Text(l.hintSymbols(sol.symbols.map(tokenLabel).join('  ')), textAlign: TextAlign.center, style: small));
         }
@@ -220,15 +317,38 @@ class _Cabinet extends ConsumerWidget {
       }
     }
 
-    return CrtFrame(
-      padding: EdgeInsets.fromLTRB(compact ? 14 : 32, 24, compact ? 14 : 32, 24),
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (_, e) => _onKey(ref, e),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const _LevelMenu(),
-        SizedBox(height: compact ? 20 : 30),
+        // nivel (centro) + DICA (canto superior direito)
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Expanded(child: _LevelMenu()),
+          const SizedBox(width: 8),
+          ArcadeButton(
+            compact: true,
+            icon: Icons.lightbulb,
+            label: '${l.hint} ${game.hints}/3',
+            color: p.shadow,
+            onPressed: (busy || game.hints >= 3) ? null : () => n.hint(number),
+          ),
+        ]),
+        SizedBox(height: compact ? 14 : 22),
         _NumberRow(number: number, compact: compact),
-        const SizedBox(height: 22),
+        const SizedBox(height: 10),
+        // VERIFICAR: logo abaixo da expressao, centralizado
+        Center(
+          child: ArcadeButton(
+            large: true,
+            icon: Icons.check,
+            label: l.check,
+            color: p.title,
+            onPressed: busy ? null : () => n.check(number),
+          ),
+        ),
+        const SizedBox(height: 16),
         Container(height: 2, color: p.grid.withValues(alpha: .7)),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Text(l.latexTitle.toUpperCase(), textAlign: TextAlign.center, style: pixelLabel(context, size: 8)),
         const SizedBox(height: 6),
         Center(child: LatexPreview(tex)),
@@ -238,6 +358,17 @@ class _Cabinet extends ConsumerWidget {
             for (final m in msgs) Padding(padding: const EdgeInsets.only(top: 12), child: m),
           ]),
         ),
+        const SizedBox(height: 16),
+        // PULAR: canto inferior esquerdo
+        Row(children: [
+          ArcadeButton(
+            compact: true,
+            icon: Icons.skip_next,
+            label: l.skip,
+            onPressed: busy ? null : () => n.skip(number),
+          ),
+          const Spacer(),
+        ]),
       ]),
     );
   }
@@ -254,7 +385,7 @@ class _LevelMenu extends ConsumerWidget {
     final level = ref.watch(gameProvider.select((g) => g.level));
     return Wrap(
       alignment: WrapAlignment.center,
-      spacing: 26,
+      spacing: 20,
       runSpacing: 10,
       children: [
         for (final lv in Level.values)
@@ -265,7 +396,7 @@ class _LevelMenu extends ConsumerWidget {
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Text(
                   levelName(l, lv).toUpperCase(),
-                  style: pixelLabel(context, size: 11, color: lv == level ? p.text : p.text.withValues(alpha: .45)),
+                  style: pixelLabel(context, size: 10, color: lv == level ? p.text : p.text.withValues(alpha: .45)),
                 ),
                 SizedBox(width: 20, child: lv == level ? Icon(Icons.arrow_left, color: p.title, size: 24) : null),
               ]),
@@ -285,21 +416,20 @@ class _NumberRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final digits = number.toString().padLeft(4, '0').split('');
-    final digitW = compact ? 56.0 : 80.0, digitH = compact ? 66.0 : 90.0;
+    final digitW = compact ? 52.0 : 80.0, digitH = compact ? 62.0 : 90.0;
     const slotGap = 12.0, slotMin = 56.0;
 
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         for (var i = 0; i < 5; i++) ...[
-          // coluna da lacuna i: espaco do digito + lacuna embaixo
           Column(children: [SizedBox(height: digitH + slotGap), _Slot(index: i)]),
           if (i < 4)
             Column(children: [
               SizedBox(
                 width: digitW,
                 height: digitH,
-                child: Center(child: Text(digits[i], style: arcadeStyle(context, size: compact ? 42 : 60))),
+                child: Center(child: Text(digits[i], style: arcadeStyle(context, size: compact ? 40 : 60))),
               ),
               const SizedBox(height: slotGap + slotMin),
             ]),
@@ -358,7 +488,7 @@ class _Slot extends ConsumerWidget {
   }
 }
 
-/// Simbolo colocado numa lacuna. Ao acertar (flying) ele desce e some, "voltando" a bandeja.
+/// Simbolo colocado numa lacuna. Ao acertar (flying) ele desce e some, "voltando" ao painel.
 class _Chip extends StatelessWidget {
   const _Chip({required this.token, required this.flying, required this.onTap});
   final String token;
@@ -397,99 +527,86 @@ class _Chip extends StatelessWidget {
   }
 }
 
-// ------------------------------------------------------------------ bandeja + botoes
+// ------------------------------------------------------------------ painel de controle
 
-class _Controls extends ConsumerWidget {
-  const _Controls({required this.number});
-  final int number;
+/// Cor do botao conforme o tipo de operador.
+Color _domeColor(String t) => switch (t) {
+      '+' || '-' || '*' || '/' => const Color(0xFFE53935), // aritmetica: vermelho
+      '**' || '√' || '∛' || '!' => const Color(0xFF2ECC71), // potencia/raiz/fatorial: verde
+      '⌊' || '⌋' || '⌈' || '⌉' => const Color(0xFFF5C518), // base/teto: amarelo
+      _ => const Color(0xFF2E7DFF), // ( ) | = : azul
+    };
+
+class _Deck extends ConsumerWidget {
+  const _Deck({required this.compact});
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final p = context.arcade;
     final game = ref.watch(gameProvider);
-    final n = ref.read(gameProvider.notifier);
-    final busy = game.flying;
-
-    return ArcadePanel(
-      title: l.trayTitle,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        // Operadores abaixo do numero, em grade de 2 linhas.
-        _TokenGrid(tokens: game.level.tray),
-        const SizedBox(height: 6),
-        Text(l.trayHint, textAlign: TextAlign.center, style: pixelLabel(context, size: 8).copyWith(height: 1.7)),
-        const SizedBox(height: 16),
-        Wrap(alignment: WrapAlignment.center, spacing: 12, runSpacing: 4, children: [
-          ArcadeButton(icon: Icons.backspace_outlined, tooltip: l.backspace, onPressed: busy ? null : n.backspace),
-          ArcadeButton(label: l.clear, onPressed: busy ? null : n.clear),
-          ArcadeButton(label: l.skip, color: p.shadow, onPressed: busy ? null : () => n.skip(number)),
-          ArcadeButton(
-            icon: Icons.lightbulb_outline,
-            label: '${l.hint} ${game.hints}/3',
-            onPressed: (busy || game.hints >= 3) ? null : () => n.hint(number),
-          ),
-          ArcadeButton(label: l.check, color: p.title, onPressed: busy ? null : () => n.check(number)),
-        ]),
-      ]),
-    );
-  }
-}
-
-/// Grade de 2 linhas com teclas pequenas de tamanho fixo.
-class _TokenGrid extends StatelessWidget {
-  const _TokenGrid({required this.tokens});
-  final List<String> tokens;
-
-  static const _cellW = 46.0, _gap = 8.0;
-
-  @override
-  Widget build(BuildContext context) {
+    final tokens = game.level.tray;
+    final size = compact ? 42.0 : 52.0;
+    const gap = 10.0;
     final cols = (tokens.length / 2).ceil().clamp(4, 8);
-    final width = cols * _cellW + (cols - 1) * _gap + 1;
-    return Center(
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: SizedBox(
-          width: width,
-          child: Wrap(spacing: _gap, runSpacing: 2, children: [for (final t in tokens) _TokenKey(token: t)]),
-        ),
+    final gridW = cols * size + (cols - 1) * gap + 1;
+
+    final grid = FittedBox(
+      fit: BoxFit.scaleDown,
+      child: SizedBox(
+        width: gridW,
+        child: Wrap(spacing: gap, runSpacing: 8, children: [
+          for (final t in tokens) _Key(token: t, size: size, enabled: !game.flying),
+        ]),
       ),
     );
+    final hint = Text(
+      l.trayHint,
+      textAlign: TextAlign.center,
+      style: pixelLabel(context, size: 7, color: p.text.withValues(alpha: .85)).copyWith(height: 1.8),
+    );
+    final title = Text(l.trayTitle.toUpperCase(), style: pixelLabel(context, size: 9, color: p.text));
+
+    if (compact) {
+      return Column(children: [title, const SizedBox(height: 12), grid, const SizedBox(height: 14), hint]);
+    }
+    return Column(children: [
+      Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        const Joystick(),
+        Expanded(child: Column(children: [title, const SizedBox(height: 12), Center(child: grid)])),
+        CoinPlate(label: l.insertCoin),
+      ]),
+      const SizedBox(height: 16),
+      hint,
+    ]);
   }
 }
 
-/// Tecla da bandeja: clique adiciona na lacuna selecionada; arrastar solta em qualquer lacuna.
-class _TokenKey extends ConsumerWidget {
-  const _TokenKey({required this.token});
+/// Botao redondo do painel: clique adiciona na lacuna selecionada; arrastar solta em qualquer lacuna.
+class _Key extends ConsumerWidget {
+  const _Key({required this.token, required this.size, required this.enabled});
   final String token;
+  final double size;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final p = context.arcade;
-    final key = ArcadeButton(
-      compact: true,
-      symbol: true,
-      fixedSize: const Size(46, 38),
-      symbolSize: 17,
+    final color = _domeColor(token);
+    final button = DomeButton(
+      color: color,
       label: tokenLabel(token),
-      onPressed: () => ref.read(gameProvider.notifier).addToken(token),
+      size: size,
+      onPressed: enabled ? () => ref.read(gameProvider.notifier).addToken(token) : null,
     );
     return Draggable<String>(
       data: token,
       feedback: Material(
         color: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: p.title,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [BoxShadow(color: p.shadow, offset: const Offset(3, 3))],
-          ),
-          child: Text(tokenLabel(token), style: symbolStyle(p.bg, size: 24)),
-        ),
+        child: DomeButton(color: color, label: tokenLabel(token), size: size * 1.15, onPressed: () {}),
       ),
-      childWhenDragging: Opacity(opacity: .35, child: key),
-      child: key,
+      childWhenDragging: Opacity(opacity: .35, child: button),
+      child: button,
     );
   }
 }
