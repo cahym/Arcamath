@@ -15,7 +15,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get insertCoin => 'INSIRA A FICHA';
 
   @override
-  String get loginSubtitle => 'Entre com o Google para jogar';
+  String get loginSubtitle => 'Entre com e-mail ou Google para jogar';
 
   @override
   String madeBy(String names) {
@@ -112,7 +112,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get errOverflow => 'O número ficou grande demais.';
 
   @override
-  String get errSave => 'Correto, mas não foi possível salvar seu progresso.';
+  String errSave(String error) {
+    return 'Correto, mas não foi possível salvar seu progresso ($error).';
+  }
 
   @override
   String get allSolved =>

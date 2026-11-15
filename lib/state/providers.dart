@@ -88,6 +88,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
   void setSound(bool on) {
     state = state.copyWith(soundOn: on);
     _p.setBool('sound', on);
+    if (on) ref.read(sfxProvider).play('coin.wav'); // confirma que o som esta ligado
   }
 
   void setLocale(Locale l) {
@@ -103,14 +104,15 @@ final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(Setti
 class Sfx {
   Sfx(this._enabled);
   final bool Function() _enabled;
-  final _player = AudioPlayer();
 
+  /// Toca um efeito (so se o som estiver ligado). Um player novo por efeito permite sons sobrepostos.
   Future<void> play(String file) async {
     if (!_enabled()) return;
     try {
-      await _player.stop();
-      await _player.play(AssetSource('sfx/$file'));
-    } catch (_) {/* arquivo ausente ou audio bloqueado: ignora */}
+      final player = AudioPlayer();
+      player.onPlayerComplete.first.then((_) => player.dispose()).catchError((_) {});
+      await player.play(AssetSource('sfx/$file'), volume: .8);
+    } catch (_) {/* audio bloqueado ou arquivo ausente: ignora */}
   }
 }
 
@@ -126,11 +128,7 @@ final repositoryProvider = Provider<GameRepository>(
 
 /// Documento do usuario em tempo real (pontuacao e quantidade de resolvidos).
 final userDocProvider = StreamProvider.autoDispose<Map<String, dynamic>?>((ref) {
-  final user = ref.watch(authUserProvider).when(
-    data: (value) => value,
-    loading: () => null,
-    error: (_, __) => null,
-  );
+  final user = ref.watch(authUserProvider).asData?.value;
   if (user == null) return const Stream.empty();
   return ref.watch(repositoryProvider).watchUser();
 });

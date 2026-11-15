@@ -40,7 +40,11 @@ class ArcadeButton extends StatefulWidget {
     this.compact = false,
     this.symbol = false,
     this.tooltip,
+    this.fixedSize,
+    this.symbolSize,
   });
+  final Size? fixedSize;
+  final double? symbolSize;
   final VoidCallback? onPressed;
   final String? label;
   final IconData? icon;
@@ -73,7 +77,7 @@ class _ArcadeButtonState extends State<ArcadeButton> {
         Text(
           widget.label!,
           style: widget.symbol
-              ? symbolStyle(fg, size: widget.compact ? 18 : 22)
+              ? symbolStyle(fg, size: widget.symbolSize ?? (widget.compact ? 18 : 22))
               : GoogleFonts.pressStart2p(fontSize: widget.compact ? 9 : 11, color: fg),
         ),
     ]);
@@ -91,8 +95,12 @@ class _ArcadeButtonState extends State<ArcadeButton> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 70),
             transform: Matrix4.translationValues(0, 5 - depth, 0),
-            constraints: BoxConstraints(minWidth: widget.compact ? 40 : 56, minHeight: widget.compact ? 40 : 48),
-            padding: EdgeInsets.symmetric(horizontal: widget.compact ? 10 : 16, vertical: 8),
+            constraints: widget.fixedSize != null
+                ? BoxConstraints.tight(widget.fixedSize!)
+                : BoxConstraints(minWidth: widget.compact ? 40 : 56, minHeight: widget.compact ? 40 : 48),
+            padding: widget.fixedSize != null
+                ? EdgeInsets.zero
+                : EdgeInsets.symmetric(horizontal: widget.compact ? 10 : 16, vertical: 8),
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: base,

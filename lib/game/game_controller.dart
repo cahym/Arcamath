@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart' show FirebaseException;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants.dart';
@@ -9,11 +13,14 @@ import 'solver.dart';
 enum VerdictKind { correct, wrong, error, saveFailed }
 
 class Verdict {
-  const Verdict(this.kind, {this.points = 0, this.left, this.right, this.error});
+  const Verdict(this.kind, {this.points = 0, this.left, this.right, this.error, this.detail});
   final VerdictKind kind;
   final int points;
   final double? left, right;
   final ExprErrorKind? error;
+
+  /// Codigo do erro do Firestore (ex.: permission-denied), mostrado quando salvar falha.
+  final String? detail;
 }
 
 /// Dicas gastas -> pontos: 0 dicas = cheio, 1-2 = metade, 3 (solucao revelada) = zero.
@@ -118,7 +125,7 @@ class GameNotifier extends Notifier<GameState> {
       clearVerdict: true,
       gaps: (h == 3 && sol != null) ? [for (final g in sol.gaps) [...g]] : null,
     );
-    ref.read(sfxProvider).play('tap.wav');
+    ref.read(sfxProvider).play('hint.wav');
   }
 
   void addToken(String t, {int? gap}) {
@@ -152,6 +159,7 @@ class GameNotifier extends Notifier<GameState> {
   /// "Pular": descarta o numero atual (sem pontuar) e sorteia outro.
   void skip(int number) {
     if (state.flying) return;
+    ref.read(sfxProvider).play('skip.wav');
     state = GameState(level: state.level, round: _draw(state.level, exclude: number), gaps: freshGaps());
   }
 
@@ -177,16 +185,22 @@ class GameNotifier extends Notifier<GameState> {
     final pts = pointsFor(level, state.hints);
     state = state.copyWith(flying: true, verdict: Verdict(VerdictKind.correct, points: pts));
     sfx.play('win.wav');
-    try {
-      await ref.read(repositoryProvider).saveSolved(
-            number: number,
-            level: level,
-            expression: mergeDigits(tokens).join(' '),
-            points: pts,
-          );
-    } catch (_) {
-      state = state.copyWith(verdict: const Verdict(VerdictKind.saveFailed));
-    }
+    // Grava em segundo plano: NAO esperamos a confirmacao do servidor para passar de fase
+    // (sem conexao com o Firestore essa confirmacao nunca chega e o jogo travaria).
+    ref
+        .read(repositoryProvider)
+        .saveSolved(
+          number: number,
+          level: level,
+          expression: mergeDigits(tokens).join(' '),
+          points: pts,
+        )
+        .timeout(const Duration(seconds: 15))
+        .catchError((Object e, StackTrace st) {
+      debugPrint('Arcamath: falha ao salvar progresso: $e\n$st');
+      final code = e is FirebaseException ? e.code : (e is TimeoutException ? 'timeout' : e.runtimeType.toString());
+      state = state.copyWith(verdict: Verdict(VerdictKind.saveFailed, detail: code));
+    });
     await Future<void>.delayed(const Duration(milliseconds: 700));
     state = GameState(level: level, round: _draw(level), gaps: freshGaps(), verdict: state.verdict);
   }

@@ -113,7 +113,7 @@ abstract class AppLocalizations {
   /// No description provided for @loginSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Sign in with Google to play'**
+  /// **'Sign in with e-mail or Google to play'**
   String get loginSubtitle;
 
   /// No description provided for @madeBy.
@@ -287,8 +287,8 @@ abstract class AppLocalizations {
   /// No description provided for @errSave.
   ///
   /// In en, this message translates to:
-  /// **'Correct, but saving your progress failed.'**
-  String get errSave;
+  /// **'Correct, but saving your progress failed ({error}).'**
+  String errSave(String error);
 
   /// No description provided for @allSolved.
   ///

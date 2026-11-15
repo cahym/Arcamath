@@ -2,7 +2,7 @@
   "@@locale": "en",
   "appTitle": "Arcamath",
   "insertCoin": "INSERT COIN",
-  "loginSubtitle": "Sign in with Google to play",
+  "loginSubtitle": "Sign in with e-mail or Google to play",
   "madeBy": "Made by {names}",
   "@madeBy": {
     "placeholders": {
@@ -62,7 +62,7 @@
   "errFactorial": "Factorial needs a whole number from 0 to 20.",
   "errDomain": "Invalid operation, such as the root of a negative number.",
   "errOverflow": "The number got too big.",
-  "errSave": "Correct, but saving your progress failed.",
+  "errSave": "Correct, but saving your progress failed ({error}).",
   "allSolved": "You solved every number at this level! Try another level.",
   "loadError": "Could not load data: {error}",
   "@loadError": {
@@ -113,5 +113,12 @@
     }
   },
   "hintReveal": "Hint 3: the full solution is on the board. This round is worth 0 points.",
-  "hintNone": "No solution found for this number. Press SKIP."
+  "hintNone": "No solution found for this number. Press SKIP.",
+  "@errSave": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
 }

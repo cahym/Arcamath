@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -34,9 +36,19 @@ class GameRepository {
 
   Stream<Map<String, dynamic>?> watchUser() => _userDoc.snapshots().map((s) => s.data());
 
+  /// Numeros resolvidos nesta sessao (garante que nao reaparecem mesmo se o Firestore demorar a confirmar).
+  final Map<String, Set<int>> _localSolved = {};
+  String _key(Level l) => '${_user.uid}_${l.name}';
+
   Future<Set<int>> solvedNumbers(Level level) async {
-    final snap = await _userDoc.collection('solved').where('level', isEqualTo: level.name).get();
-    return {for (final d in snap.docs) (d.data()['number'] as num).toInt()};
+    var remote = <int>{};
+    try {
+      final snap = await _userDoc.collection('solved').where('level', isEqualTo: level.name).get();
+      remote = {for (final d in snap.docs) (d.data()['number'] as num).toInt()};
+    } catch (e) {
+      debugPrint('Arcamath: nao foi possivel ler os resolvidos ($e); usando apenas os da sessao');
+    }
+    return {...remote, ...?_localSolved[_key(level)]};
   }
 
   /// Sorteia um numero de 4 digitos que o usuario ainda NAO resolveu neste nivel.
@@ -54,18 +66,20 @@ class GameRepository {
     throw const AllSolvedException();
   }
 
+  /// Grava o numero resolvido + pontuacao num unico batch. O Firestore aplica a escrita no cache local
+  /// na hora (HUD atualiza); o Future retornado so completa quando o SERVIDOR confirma, entao
+  /// o jogo NAO deve ficar esperando por ele.
   Future<void> saveSolved({
     required int number,
     required Level level,
     required String expression,
     required int points,
-  }) async {
+  }) {
     final u = _user;
+    _localSolved.putIfAbsent(_key(level), () => {}).add(number);
     final userRef = _db.collection('users').doc(u.uid);
-    final doc = userRef.collection('solved').doc('${level.name}_$number');
-    if ((await doc.get()).exists) return;
     final batch = _db.batch();
-    batch.set(doc, {
+    batch.set(userRef.collection('solved').doc('${level.name}_$number'), {
       'number': number,
       'level': level.name,
       'expression': expression,
@@ -82,7 +96,7 @@ class GameRepository {
       },
       SetOptions(merge: true),
     );
-    await batch.commit();
+    return batch.commit();
   }
 
   Future<List<RankEntry>> topPlayers({int limit = 20}) async {

@@ -68,18 +68,10 @@ class _Hud extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    final data = ref.watch(userDocProvider).when(
-      data: (value) => value,
-      loading: () => null,
-      error: (_, __) => null,
-    );
+    final data = ref.watch(userDocProvider).asData?.value;
     final score = (data?['score'] as num?)?.toInt() ?? 0;
     final solved = (data?['solvedCount'] as num?)?.toInt() ?? 0;
-    final high = ref.watch(_highScoreProvider).when(
-      data: (value) => value,
-      loading: () => 0,
-      error: (_, __) => 0,
-    );
+    final high = ref.watch(_highScoreProvider).asData?.value ?? 0;
     final hints = ref.watch(gameProvider.select((g) => g.hints));
     final size = compact ? 14.0 : 20.0;
 
@@ -422,10 +414,8 @@ class _Controls extends ConsumerWidget {
     return ArcadePanel(
       title: l.trayTitle,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        // Operadores abaixo do numero, numa unica faixa horizontal.
-        Wrap(alignment: WrapAlignment.center, spacing: 10, runSpacing: 4, children: [
-          for (final t in game.level.tray) _TokenKey(token: t),
-        ]),
+        // Operadores abaixo do numero, em grade de 2 linhas.
+        _TokenGrid(tokens: game.level.tray),
         const SizedBox(height: 6),
         Text(l.trayHint, textAlign: TextAlign.center, style: pixelLabel(context, size: 8).copyWith(height: 1.7)),
         const SizedBox(height: 16),
@@ -445,6 +435,29 @@ class _Controls extends ConsumerWidget {
   }
 }
 
+/// Grade de 2 linhas com teclas pequenas de tamanho fixo.
+class _TokenGrid extends StatelessWidget {
+  const _TokenGrid({required this.tokens});
+  final List<String> tokens;
+
+  static const _cellW = 46.0, _gap = 8.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final cols = (tokens.length / 2).ceil().clamp(4, 8);
+    final width = cols * _cellW + (cols - 1) * _gap + 1;
+    return Center(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: SizedBox(
+          width: width,
+          child: Wrap(spacing: _gap, runSpacing: 2, children: [for (final t in tokens) _TokenKey(token: t)]),
+        ),
+      ),
+    );
+  }
+}
+
 /// Tecla da bandeja: clique adiciona na lacuna selecionada; arrastar solta em qualquer lacuna.
 class _TokenKey extends ConsumerWidget {
   const _TokenKey({required this.token});
@@ -456,6 +469,8 @@ class _TokenKey extends ConsumerWidget {
     final key = ArcadeButton(
       compact: true,
       symbol: true,
+      fixedSize: const Size(46, 38),
+      symbolSize: 17,
       label: tokenLabel(token),
       onPressed: () => ref.read(gameProvider.notifier).addToken(token),
     );
