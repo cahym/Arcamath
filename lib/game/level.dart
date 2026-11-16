@@ -18,8 +18,9 @@ extension LevelX on Level {
   /// Simbolos mostrados na bandeja, incluindo o "=".
   List<String> get tray => [...kTokenOrder.where(allowed.contains), '='];
 
-  /// So o nivel facil aceita divisao nao inteira (5/2).
-  bool get allowFractions => this == Level.easy;
+  /// Nenhum nivel aceita divisao nao inteira (5/2): so divisoes exatas.
+  /// (Para voltar a permitir no nivel facil: `this == Level.easy`.)
+  bool get allowFractions => false;
 
   int get points => switch (this) {
         Level.easy => 10,

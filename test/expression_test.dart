@@ -18,12 +18,13 @@ void main() {
     expect(previewLatex(t), r'\sqrt{\left(8 + 1\right)} = {3}^{1}');
   });
 
-  test('base so vale no facil, divisao fracionaria so no facil', () {
+  test('base so vale no facil; divisao nao inteira e erro em todos os niveis', () {
     final gaps = g([['⌊'], ['/'], ['⌋', '='], ['*'], []]);
     final t = tokensFor(5221, gaps);
     expect(checkEquation(t, Level.easy).correct, isTrue);
     expect(checkEquation(t, Level.intermediate).error?.kind, ExprErrorKind.syntax);
     final div = tokensFor(5221, g([[], ['/'], ['='], [], []]));
+    expect(checkEquation(div, Level.easy).error?.kind, ExprErrorKind.nonIntegerDivision);
     expect(checkEquation(div, Level.intermediate).error?.kind, ExprErrorKind.nonIntegerDivision);
   });
 

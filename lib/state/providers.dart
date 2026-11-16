@@ -20,6 +20,7 @@ class SettingsState {
     required this.fontFamily,
     required this.seed,
     required this.soundOn,
+    required this.musicOn,
     required this.locale,
   });
   final ThemeMode themeMode;
@@ -27,6 +28,7 @@ class SettingsState {
   final String fontFamily;
   final Color seed;
   final bool soundOn;
+  final bool musicOn;
   final Locale? locale;
 
   SettingsState copyWith({
@@ -35,6 +37,7 @@ class SettingsState {
     String? fontFamily,
     Color? seed,
     bool? soundOn,
+    bool? musicOn,
     Locale? locale,
   }) =>
       SettingsState(
@@ -43,6 +46,7 @@ class SettingsState {
         fontFamily: fontFamily ?? this.fontFamily,
         seed: seed ?? this.seed,
         soundOn: soundOn ?? this.soundOn,
+        musicOn: musicOn ?? this.musicOn,
         locale: locale ?? this.locale,
       );
 }
@@ -60,7 +64,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
       fontScale: _p.getDouble('fontScale') ?? 1.0,
       fontFamily: _p.getString('fontFamily') ?? kFontFamilies.first,
       seed: Color(_p.getInt('seed') ?? kSeedPresets.first.toARGB32()),
-      soundOn: _p.getBool('sound') ?? false, // som SEMPRE comeca desligado
+      soundOn: _p.getBool('sound') ?? false, // efeitos sonoros SEMPRE comecam desligados
+      musicOn: _p.getBool('music') ?? false, // musica de fundo SEMPRE comeca desligada
       locale: lc == null ? null : Locale(lc),
     );
   }
@@ -91,6 +96,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
     if (on) ref.read(sfxProvider).play('coin.wav'); // confirma que o som esta ligado
   }
 
+  void setMusic(bool on) {
+    state = state.copyWith(musicOn: on);
+    _p.setBool('music', on);
+  }
+
   void setLocale(Locale l) {
     state = state.copyWith(locale: l);
     _p.setString('locale', l.languageCode);
@@ -117,6 +127,64 @@ class Sfx {
 }
 
 final sfxProvider = Provider<Sfx>((ref) => Sfx(() => ref.read(settingsProvider).soundOn));
+
+// ------------------------------------------------------------ musica de fundo (opcional)
+
+/// Musica de fundo em loop. Tem a sua propria chave nas configuracoes, separada dos efeitos
+/// sonoros (Sfx), e comeca desligada. Pausa quando o app vai para segundo plano.
+class MusicPlayer with WidgetsBindingObserver {
+  MusicPlayer(this._wanted) {
+    WidgetsBinding.instance.addObserver(this);
+  }
+  final bool Function() _wanted;
+  AudioPlayer? _player;
+  bool _started = false;
+
+  Future<void> setPlaying(bool on) async {
+    try {
+      if (!on) {
+        await _player?.pause();
+        return;
+      }
+      var p = _player;
+      if (p == null) {
+        p = AudioPlayer();
+        await p.setReleaseMode(ReleaseMode.loop);
+        await p.setVolume(.35);
+        _player = p;
+      }
+      if (_started) {
+        await p.resume();
+      } else {
+        await p.play(AssetSource('music/theme.wav'));
+        _started = true;
+      }
+    } catch (_) {/* audio bloqueado (ex.: autoplay do navegador) ou arquivo ausente: ignora */}
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _player?.pause();
+    } else if (state == AppLifecycleState.resumed && _wanted()) {
+      setPlaying(true);
+    }
+  }
+
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _player?.dispose();
+  }
+}
+
+/// Mantem a musica em sincronia com a configuracao (observado pelo ArcamathApp).
+final musicProvider = Provider<MusicPlayer>((ref) {
+  final m = MusicPlayer(() => ref.read(settingsProvider).musicOn);
+  ref.listen<bool>(settingsProvider.select((s) => s.musicOn), (_, on) => m.setPlaying(on));
+  ref.onDispose(m.dispose);
+  if (ref.read(settingsProvider).musicOn) m.setPlaying(true);
+  return m;
+});
 
 // ------------------------------------------------------------ Firebase
 

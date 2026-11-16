@@ -206,6 +206,18 @@ abstract class AppLocalizations {
   /// **'Click a slot, then a symbol, or drag symbols into a slot. Keyboard: type the symbols (^ for **, R for √, C for ∛), arrows pick the slot, Backspace deletes, Enter checks, H hint, S skip.'**
   String get trayHint;
 
+  /// No description provided for @multiOperatorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can put more than one operator in each box, e.g. ) ! together.'**
+  String get multiOperatorHint;
+
+  /// No description provided for @yourRank.
+  ///
+  /// In en, this message translates to:
+  /// **'Your rank: {position}'**
+  String yourRank(String position);
+
   /// No description provided for @backspace.
   ///
   /// In en, this message translates to:
@@ -392,6 +404,18 @@ abstract class AppLocalizations {
   /// **'Sound effects (off by default)'**
   String get soundHint;
 
+  /// No description provided for @music.
+  ///
+  /// In en, this message translates to:
+  /// **'Background music'**
+  String get music;
+
+  /// No description provided for @musicHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Background music (off by default), separate from sound effects'**
+  String get musicHint;
+
   /// No description provided for @account.
   ///
   /// In en, this message translates to:
@@ -413,7 +437,7 @@ abstract class AppLocalizations {
   /// No description provided for @helpBody.
   ///
   /// In en, this message translates to:
-  /// **'Each round shows a 4-digit number. Keep the digits in order and fill the slots under the spaces between them with symbols so that both sides of the = sign have the same value.\n\nExample: 5261 becomes (5 − 2)! = 6 × 1.\n\nClick a slot, then click symbols (or drag them in). Click a placed symbol to remove it. Digits with nothing between them join into a bigger number.\n\nLevels: Easy allows fractions, ⌊x⌋ and ⌈x⌉. All other levels only allow exact integer divisions. Intermediate drops ⌊ ⌋ ⌈ ⌉, Advanced also drops ∛ and **, and Hard also drops √ and !.\n\nHints (the 3 hearts): 1 shows where the = goes, 2 shows which symbols are used, 3 fills in the solution. Using 1 or 2 hints halves the points; revealing the solution gives 0.\n\nKeyboard: type + - * / ( ) | ! = , ^ for **, R for √, C for ∛, arrows pick a slot, Backspace deletes, Esc clears, Enter checks, H hint, S skip.\n\nToo hard? Press SKIP to get another number.'**
+  /// **'Each round shows a 4-digit number. Keep the digits in order and fill the slots under the spaces between them with symbols so that both sides of the = sign have the same value.\n\nExample: 5261 becomes (5 − 2)! = 6 × 1.\n\nClick a slot, then click symbols (or drag them in). You can put more than one operator in the same box. Click a placed symbol to remove it. Digits with nothing between them join into a bigger number.\n\nLevels: Easy allows ⌊x⌋ and ⌈x⌉. All levels only allow exact integer divisions. Intermediate drops ⌊ ⌋ ⌈ ⌉, Advanced also drops ∛ and **, and Hard also drops √ and !.\n\nHints (the 3 hearts): 1 shows where the = goes, 2 shows which symbols are used, 3 fills in the solution. Using 1 or 2 hints halves the points; revealing the solution gives 0.\n\nKeyboard: type + - * / ( ) | ! = , ^ for **, R for √, C for ∛, arrows pick a slot, Backspace deletes, Esc clears, Enter checks, H hint, S skip.\n\nToo hard? Press SKIP to get another number.'**
   String get helpBody;
 
   /// No description provided for @close.

@@ -17,6 +17,7 @@ class ArcamathApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(settingsProvider);
     final router = ref.watch(routerProvider);
+    ref.watch(musicProvider); // música de fundo (só toca se estiver ligada nas configurações)
 
     // Trocou de conta? Descarta a rodada/estado do jogador anterior.
     ref.listen(authUserProvider, (prev, next) {

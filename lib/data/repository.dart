@@ -99,6 +99,13 @@ class GameRepository {
     return batch.commit();
   }
 
+  /// Posicao do usuario no ranking (1 = primeiro): quantos jogadores tem pontuacao maior + 1.
+  /// Usa uma consulta de agregacao (count), que nao baixa os documentos.
+  Future<int> myRank(int score) async {
+    final snap = await _db.collection('users').where('score', isGreaterThan: score).count().get();
+    return (snap.count ?? 0) + 1;
+  }
+
   Future<List<RankEntry>> topPlayers({int limit = 20}) async {
     final snap = await _db.collection('users').orderBy('score', descending: true).limit(limit).get();
     return [

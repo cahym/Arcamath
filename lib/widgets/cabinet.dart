@@ -10,16 +10,15 @@ Color _shade(Color c, double d) {
   return h.withLightness((h.lightness + d).clamp(0.0, 1.0)).toColor();
 }
 
-/// Gabinete de fliperama: letreiro (marquee) + corpo com a tela CRT + painel de controle (deck).
-/// [screen] vai dentro da tela; [deck] vai no painel de controle (botoes da maquina).
+/// Gabinete de fliperama: letreiro (marquee) + corpo com a tela CRT.
+/// [screen] vai dentro da tela (inclusive a faixa de botoes, ver [DeckPanel]).
 class ArcadeCabinet extends StatelessWidget {
-  const ArcadeCabinet({super.key, required this.screen, required this.deck, required this.compact});
-  final Widget screen, deck;
+  const ArcadeCabinet({super.key, required this.screen, required this.compact});
+  final Widget screen;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final p = context.arcade;
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
@@ -30,7 +29,6 @@ class ArcadeCabinet extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           _Marquee(compact: compact),
           _Body(compact: compact, screen: screen),
-          _DeckPanel(compact: compact, color: p.grid, child: deck),
         ]),
       ),
     );
@@ -187,10 +185,12 @@ class _BodyPainter extends CustomPainter {
   bool shouldRepaint(_BodyPainter old) => old.dark != dark || old.wall != wall || old.light != light || old.inset != inset;
 }
 
-// ------------------------------------------------------------------ painel de controle
+// ------------------------------------------------------------------ faixa de controle
 
-class _DeckPanel extends StatelessWidget {
-  const _DeckPanel({required this.child, required this.compact, required this.color});
+/// Faixa de controle (botoes, joystick e plaquinha de ficha) com cantos arredondados.
+/// Fica dentro da tela do jogo.
+class DeckPanel extends StatelessWidget {
+  const DeckPanel({super.key, required this.child, required this.compact, required this.color});
   final Widget child;
   final bool compact;
   final Color color;
@@ -198,14 +198,15 @@ class _DeckPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(compact ? 10 : 24, 18, compact ? 10 : 24, 20),
+      padding: EdgeInsets.all(compact ? 10 : 14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [Color.lerp(color, Colors.white, .12)!, Color.lerp(color, Colors.black, .3)!],
         ),
-        border: Border(top: BorderSide(color: Color.lerp(color, Colors.white, .35)!, width: 4)),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Color.lerp(color, Colors.white, .35)!, width: 3),
       ),
       child: child,
     );

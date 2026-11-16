@@ -121,6 +121,18 @@ class SettingsPage extends ConsumerWidget {
       ),
     );
 
+    // musica de fundo opcional, independente dos efeitos sonoros (padrao: desligada)
+    final music = ArcadePanel(
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(l.music),
+        subtitle: Text(l.musicHint),
+        secondary: Icon(s.musicOn ? Icons.music_note : Icons.music_off),
+        value: s.musicOn,
+        onChanged: n.setMusic,
+      ),
+    );
+
     final account = ArcadePanel(
       title: l.account,
       child: Column(children: [
@@ -147,10 +159,10 @@ class SettingsPage extends ConsumerWidget {
                   Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Expanded(child: Column(children: spaced([theme, size, family]))),
                     const SizedBox(width: 20),
-                    Expanded(child: Column(children: spaced([seed, language, sound, account]))),
+                    Expanded(child: Column(children: spaced([seed, language, sound, music, account]))),
                   ])
                 else
-                  Column(children: spaced([theme, size, family, seed, language, sound, account])),
+                  Column(children: spaced([theme, size, family, seed, language, sound, music, account])),
               ]),
             ),
           ),

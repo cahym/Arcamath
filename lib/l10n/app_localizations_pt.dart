@@ -68,6 +68,15 @@ class AppLocalizationsPt extends AppLocalizations {
       'Clique numa lacuna e depois num símbolo, ou arraste os símbolos para uma lacuna. Teclado: digite os símbolos (^ para **, R para √, C para ∛), setas escolhem a lacuna, Backspace apaga, Enter verifica, H dica, S pula.';
 
   @override
+  String get multiOperatorHint =>
+      'Você pode colocar mais de um operador por caixinha, por exemplo ) ! juntos.';
+
+  @override
+  String yourRank(String position) {
+    return 'Sua posição: $position';
+  }
+
+  @override
   String get backspace => 'Apagar último símbolo';
 
   @override
@@ -171,6 +180,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get soundHint => 'Efeitos sonoros (desligado por padrão)';
 
   @override
+  String get music => 'Música de fundo';
+
+  @override
+  String get musicHint =>
+      'Música de fundo (desligada por padrão), separada dos efeitos sonoros';
+
+  @override
   String get account => 'Conta';
 
   @override
@@ -181,7 +197,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get helpBody =>
-      'Cada rodada mostra um número de 4 dígitos. Mantenha os dígitos na ordem e preencha as lacunas sob os espaços entre eles com símbolos para que os dois lados do sinal = tenham o mesmo valor.\n\nExemplo: 5261 vira (5 − 2)! = 6 × 1.\n\nClique numa lacuna e depois nos símbolos (ou arraste-os). Clique num símbolo colocado para removê-lo. Dígitos sem nada entre eles formam um número maior.\n\nNíveis: o Fácil permite frações, ⌊x⌋ e ⌈x⌉. Todos os outros só permitem divisões inteiras exatas. O Intermediário tira ⌊ ⌋ ⌈ ⌉, o Avançado tira também ∛ e **, e o Difícil tira também √ e !.\n\nDicas (os 3 corações): 1 mostra onde fica o =, 2 mostra quais símbolos são usados, 3 preenche a solução. Usar 1 ou 2 dicas divide os pontos pela metade; revelar a solução vale 0.\n\nTeclado: digite + - * / ( ) | ! = , ^ para **, R para √, C para ∛, setas escolhem a lacuna, Backspace apaga, Esc limpa, Enter verifica, H dica, S pula.\n\nMuito difícil? Aperte PULAR para ganhar outro número.';
+      'Cada rodada mostra um número de 4 dígitos. Mantenha os dígitos na ordem e preencha as lacunas sob os espaços entre eles com símbolos para que os dois lados do sinal = tenham o mesmo valor.\n\nExemplo: 5261 vira (5 − 2)! = 6 × 1.\n\nClique numa lacuna e depois nos símbolos (ou arraste-os). Você pode colocar mais de um operador na mesma caixinha. Clique num símbolo colocado para removê-lo. Dígitos sem nada entre eles formam um número maior.\n\nNíveis: o Fácil permite ⌊x⌋ e ⌈x⌉. Todos os níveis só permitem divisões inteiras exatas. O Intermediário tira ⌊ ⌋ ⌈ ⌉, o Avançado tira também ∛ e **, e o Difícil tira também √ e !.\n\nDicas (os 3 corações): 1 mostra onde fica o =, 2 mostra quais símbolos são usados, 3 preenche a solução. Usar 1 ou 2 dicas divide os pontos pela metade; revelar a solução vale 0.\n\nTeclado: digite + - * / ( ) | ! = , ^ para **, R para √, C para ∛, setas escolhem a lacuna, Backspace apaga, Esc limpa, Enter verifica, H dica, S pula.\n\nMuito difícil? Aperte PULAR para ganhar outro número.';
 
   @override
   String get close => 'FECHAR';
